@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from http import HTTPStatus
 
 import requests
 from dotenv import load_dotenv
@@ -32,8 +33,26 @@ class NotFoundTokenException(Exception):
 class EndPointNotAvailableException(Exception):
     pass
 
-class WrongDataFormatExceptions(Exception):
+class WrongDataFormatException(Exception):
     pass
+
+class SendMessageException(Exception):
+    pass
+
+class KeyNotFoundExcepton(Exception):
+    pass
+
+class WrongResponseException(Exception):
+    pass
+
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename='main.log',
+    filemode='w',
+    format='%(asctime)s [%(levelname)s] - %(message)s)'
+)
 
 
 def check_tokens():
@@ -43,38 +62,63 @@ def check_tokens():
         TELEGRAM_TOKEN is None,
         TELEGRAM_CHAT_ID is None]
     ):
+        logging.critical('Отсутствуют обязательные переменные '
+                         'окружения во время запуска бота')
         raise NotFoundTokenException
 
 
 
 def send_message(bot, message):
     """Отправка сообщения в Телеграм"""
-    bot.send_message(
-        chat_id=TELEGRAM_CHAT_ID,
-        text=message,
-    )
+    try:
+        bot.send_message(
+            chat_id=TELEGRAM_CHAT_ID,
+            text=message,
+        )
+    except:
+        logging.error('Сбой при отправке сщщбщения в Telegram.')
+        # raise SendMessageException
+    else:
+        logging.debug('Сообщение в Telegram успешно отправлено.')
+
 
 
 def get_api_answer(timestamp):
     """Запрос к API о статусе домашней работы"""
+
     payload = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=payload)
-    except EndPointNotAvailableException as error:
-        logging.warning(f'Невозможно получить данные через API: {error}')
-    else:
-        return response.json()
+        if response.status_code != HTTPStatus.OK:
+            raise WrongResponseException('Сбой в работе программы')
+    except requests.RequestException:
+        logging.error('Ошибка запроса к API')
+
+
+    return response.json()
 
 
 def check_response(response):
     """Проверка, что ответ от API вернулся в правильном формате"""
+    if not isinstance(response, dict):
+        raise TypeError
+    if 'homeworks' not in response:
+        raise KeyNotFoundExcepton
+    if not isinstance(response['homeworks'], list):
+        raise TypeError
     is_good_format = all(['homeworks' in response, 'current_date' in response])
     if not is_good_format:
-        raise WrongDataFormatExceptions
+        raise WrongDataFormatException
 
 
 def parse_status(homework):
     """Получение из ответной строки API значений переменных"""
+    if not 'homework_name' in homework:
+        raise KeyNotFoundExcepton('Не найдено название домашней работы')
+    if not 'status' in homework:
+        raise KeyNotFoundExcepton('Не найден статус домашней работы')
+    if not homework['status'] in HOMEWORK_VERDICTS:
+        raise KeyError('Получен неожиданный статус домашней работы!')
     homework_name = homework['homework_name']
     verdict = HOMEWORK_VERDICTS[homework['status']]
 
@@ -84,9 +128,11 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
+
     check_tokens()
     bot = TeleBot(token=TELEGRAM_TOKEN)
-    bot.polling()  # Потом поставить интревал
+
+
     while True:
         try:
             timestamp = int(time.time())
@@ -95,11 +141,15 @@ def main():
             if len(response['homeworks']) > 0:
                 message = parse_status(response['homeworks'][0])
                 send_message(bot, message)
+            else:
+                logging.debug('Новых статусов в ответе API нет.')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
 
-        time.sleep(10)
+        else:
+            time.sleep(RETRY_PERIOD)
+            bot.polling()  # Потом поставить интревал
 
 
 
