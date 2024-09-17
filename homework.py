@@ -39,7 +39,7 @@ logging.basicConfig(
 
 
 def check_tokens():
-    """Проверка, что в Окружении есть требуемые переменные"""
+    """Проверка, что в Окружении есть требуемые переменные."""
     if any([
         PRACTICUM_TOKEN is None,
         TELEGRAM_TOKEN is None,
@@ -53,7 +53,7 @@ def check_tokens():
 
 
 def send_message(bot, message):
-    """Отправка сообщения в Телеграм"""
+    """Отправка сообщения в Телеграм."""
     try:
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
@@ -66,8 +66,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    """Запрос к API о статусе домашней работы"""
-
+    """Запрос к API о статусе домашней работы."""
     payload = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=payload)
@@ -84,7 +83,7 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    """Проверка, что ответ от API вернулся в правильном формате"""
+    """Проверка, что ответ от API вернулся в правильном формате."""
     if not isinstance(response, dict):
         logging.error('Неправильный тип данных. Требуется тип \'dict\'')
         raise TypeError
@@ -99,7 +98,8 @@ def check_response(response):
 
 def parse_status(homework):
     """Получение из ответной строки API значений переменных
-    и возврат статуса работы"""
+       и возврат статуса работы.
+    """
     if 'homework_name' not in homework:
         error = 'В словаре \'homework\' отсутствует ключ \'homework_name\''
         logging.error(error)
