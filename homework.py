@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 from telebot import TeleBot
 
-from exceptions import *
+from exceptions import KeyNotFoundExcepton, WrongResponseException
 
 load_dotenv()
 
@@ -20,7 +20,7 @@ TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-MONTH_SECONDS = 30*24*3600
+MONTH_SECONDS = 30 * 24 * 3600
 
 
 HOMEWORK_VERDICTS = {
@@ -52,7 +52,6 @@ def check_tokens():
         return True
 
 
-
 def send_message(bot, message):
     """Отправка сообщения в Телеграм"""
     try:
@@ -60,11 +59,10 @@ def send_message(bot, message):
             chat_id=TELEGRAM_CHAT_ID,
             text=message,
         )
-    except:
-        logging.error('Сбой при отправке сообщения в Telegram.')
+    except Exception as error:
+        logging.error(f'Сбой при отправке сообщения в Telegram: {error}')
     else:
         logging.debug('Сообщение в Telegram успешно отправлено.')
-
 
 
 def get_api_answer(timestamp):
@@ -91,7 +89,7 @@ def check_response(response):
         logging.error('Неправильный тип данных. Требуется тип \'dict\'')
         raise TypeError
     for keyword in ('homeworks', 'current_date'):
-        if not keyword in response:
+        if keyword not in response:
             logging.error(f'В ответе API нет ключа \'{keyword}\'')
             raise KeyNotFoundExcepton
     if not isinstance(response['homeworks'], list):
@@ -100,13 +98,14 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Получение из ответной строки API значений переменных"""
-    if not 'homework_name' in homework:
-        error = f'В словаре \'homework\' отсутствует ключ \'homework_name\''
+    """Получение из ответной строки API значений переменных
+    и возврат статуса работы"""
+    if 'homework_name' not in homework:
+        error = 'В словаре \'homework\' отсутствует ключ \'homework_name\''
         logging.error(error)
         raise KeyNotFoundExcepton(error)
-    if not 'status' in homework:
-        error = f'В словаре \'homework\' отсутствует ключ \'status\''
+    if 'status' not in homework:
+        error = 'В словаре \'homework\' отсутствует ключ \'status\''
         logging.error(error)
         raise KeyNotFoundExcepton(error)
     if not homework['status'] in HOMEWORK_VERDICTS:
