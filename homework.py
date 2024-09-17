@@ -97,9 +97,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Получение из ответной строки API значений переменных
-       и возврат статуса работы.
-    """
+    """Получение из ответной строки API значений переменных."""
     if 'homework_name' not in homework:
         error = 'В словаре \'homework\' отсутствует ключ \'homework_name\''
         logging.error(error)
