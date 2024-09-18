@@ -135,7 +135,8 @@ def main():
                 try:
                     send_message(bot, error)
                 except SendMessageException:
-                    logging.error('Не удалось отправить сообщение об ошибке в Telegram!')
+                    logging.error('Не удалось отправить сообщение '
+                                  'об ошибке в Telegram!')
                 prev_error = error
             logging.error(error)
         finally:
