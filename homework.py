@@ -95,8 +95,8 @@ def parse_status(homework):
             missing_keys.append(key)
     if missing_keys:
         raise KeyNotFoundExcepton(
-            f'В словаре \'homework\' отсутствуют ключи:'
-            f' \'{"\', \'".join(missing_keys)}\''
+            'В словаре \'homework\' отсутствуют ключи:'
+            f' {", ".join(missing_keys)}'
         )
     homework_status = homework['status']
     if homework_status not in HOMEWORK_VERDICTS:
