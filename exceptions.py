@@ -4,3 +4,7 @@ class KeyNotFoundExcepton(KeyError):
 
 class WrongResponseException(Exception):
     pass
+
+
+class SendMessageException(Exception):
+    pass

@@ -8,7 +8,8 @@ import requests
 from dotenv import load_dotenv
 from telebot import TeleBot
 
-from exceptions import KeyNotFoundExcepton, WrongResponseException
+from exceptions import (KeyNotFoundExcepton, SendMessageException,
+                        WrongResponseException)
 
 
 load_dotenv()
@@ -52,7 +53,9 @@ def send_message(bot, message):
             text=message,
         )
     except Exception as error:
-        logging.error(f'Сбой при отправке сообщения в Telegram: {error}')
+        raise SendMessageException(
+            f'Сбой при отправке сообщения в Telegram: {error}'
+        )
     logging.debug('Сообщение в Telegram успешно отправлено.')
 
 
@@ -127,13 +130,14 @@ def main():
                 send_message(bot, message)
             else:
                 logging.debug('Новых статусов в ответе API нет.')
-        except (KeyNotFoundExcepton, WrongResponseException,
-                TypeError) as error:
-            logging.error(error)
         except Exception as error:
             if prev_error != error:
-                logging.critical(f'Сбой в работе программы: {error}')
+                try:
+                    send_message(bot, error)
+                except SendMessageException:
+                    logging.error('Не удалось отправить сообщение об ошибке в Telegram!')
                 prev_error = error
+            logging.error(error)
         finally:
             time.sleep(RETRY_PERIOD)
             bot.polling()
