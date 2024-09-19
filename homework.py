@@ -52,11 +52,11 @@ def send_message(bot, message):
             chat_id=TELEGRAM_CHAT_ID,
             text=message,
         )
+        logging.debug('Сообщение в Telegram успешно отправлено.')
     except Exception as error:
         raise SendMessageException(
             f'Сбой при отправке сообщения в Telegram: {error}'
         )
-    logging.debug('Сообщение в Telegram успешно отправлено.')
 
 
 def get_api_answer(timestamp):
@@ -134,10 +134,10 @@ def main():
             if prev_error != error:
                 try:
                     send_message(bot, error)
+                    prev_error = error
                 except SendMessageException:
                     logging.error('Не удалось отправить сообщение '
                                   'об ошибке в Telegram!')
-                prev_error = error
             logging.error(error)
         finally:
             time.sleep(RETRY_PERIOD)
